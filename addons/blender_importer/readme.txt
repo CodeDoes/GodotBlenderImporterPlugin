@@ -1,0 +1,1 @@
+You need to set blender path inside project settings.
