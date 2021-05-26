@@ -7,7 +7,7 @@ func get_importer_name():
 	return "blender.gltf"
 
 func get_visible_name():
-	return "Blender GLTF XImporter"
+	return "Blender glTF XImporter"
 
 func get_recognized_extensions():
 	return ["blend"]
@@ -23,7 +23,7 @@ func get_preset_count():
 
 func get_preset_name(i):
 	if i == Presets.GLTF_GLB:
-		return "Blender Gltf exporter"
+		return "glTF Binary (glb)"
 func get_import_options(i):
 	if i == Presets.GLTF_GLB:
 		return [ ]
