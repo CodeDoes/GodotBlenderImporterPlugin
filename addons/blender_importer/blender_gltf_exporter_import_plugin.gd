@@ -70,14 +70,16 @@ func flags_to_namelist(val:int,namelist:Array):
 			result.append(namelist[i].to_upper())
 	return result
 func get_cache_dir():
-	if OS.get_name()=="Windows":
-		return "%TEMP%\\Godot\\"
-	elif OS.get_name()=="OSX":
-		return "~/Library/Caches/Godot/"
-	elif OS.get_name()=="X11":
-		return "~/.cache/godot/"
+	match OS.get_name():
+		"Windows":
+			return "%TEMP%\\Godot\\"
+		"OSX":
+			return "~/Library/Caches/Godot/"
+		"X11":
+			return "~/.cache/godot/"
+
 var addon_cache_dir = "res://addons/blender_importer/cache/"
-		
+
 func import(source_file, save_path, options, platform_variants, gen_files):
 	var file = File.new()
 	var dir = Directory.new()
@@ -85,7 +87,7 @@ func import(source_file, save_path, options, platform_variants, gen_files):
 		printerr("Failed to read blend file")
 		return FAILED
 	file.close()
-	var os_blenderexe = globalize_workaround("C:\\Program Files\\Blender Foundation\\Blender 2.83\\blender.exe")
+	var os_blenderexe = globalize_workaround(ProjectSettings.get_setting("blender/path"))
 	var os_sourcefile = globalize_workaround(ProjectSettings.globalize_path(source_file))
 	
 	var filename = addon_cache_dir + save_path.get_file() + ".glb"

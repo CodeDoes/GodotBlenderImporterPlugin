@@ -4,13 +4,26 @@ extends EditorPlugin
 var import_plugins = []
 
 func _enter_tree():
-	ProjectSettings.set("blender/path", "C:\\Program Files\\Blender Foundation\\Blender 2.83\\blender.exe")
+	if !ProjectSettings.has_setting("blender/path"):
+		# Initial load, try some sane default paths for each OS
+		var path = null
+
+		match OS.get_name():
+			"Windows":
+				path = "C:\\Program Files\\Blender Foundation\\Blender 2.83\\blender.exe"
+			"OSX":
+				path = "/Applications/Blender.app/Contents/MacOS/Blender"
+			"X11":
+				path = "/usr/bin/blender"
+
+		ProjectSettings.set_setting("blender/path", path)
+
 	var property_info = {
 		"name": "blender/path",
 		"type": TYPE_STRING,
 		"hint": PROPERTY_HINT_GLOBAL_FILE,
 		"hint_string": "*.exe"
-	}	
+	}
 	ProjectSettings.add_property_info(property_info)
 	
 	for P in [
