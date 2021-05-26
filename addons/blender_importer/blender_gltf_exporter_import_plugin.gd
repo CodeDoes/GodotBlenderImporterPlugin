@@ -51,6 +51,10 @@ func import(source_file, save_path, options, platform_variants, gen_files):
 	var os_sourcefile = globalize_workaround(ProjectSettings.globalize_path(source_file))
 	var os_filename = globalize_workaround(ProjectSettings.globalize_path(save_path))
 
+	# Add the path to the actual executable for macOS
+	if OS.get_name() == "OSX":
+		os_blenderexe += "/Contents/MacOS/Blender"
+
 	# Build the python expression for running the glTF exporter
 	var os_pyexpr = "import bpy,sys;print(' '.join(sys.argv));bpy.ops.export_scene.gltf(filepath=r'%s')"%os_filename
 

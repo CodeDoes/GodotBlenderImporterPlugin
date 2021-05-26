@@ -4,26 +4,34 @@ extends EditorPlugin
 var import_plugins = []
 
 func _enter_tree():
-	if !ProjectSettings.has_setting("blender/path"):
-		# Initial load, try some sane default paths for each OS
-		var path = null
-
-		match OS.get_name():
-			"Windows":
-				path = "C:\\Program Files\\Blender Foundation\\Blender 2.83\\blender.exe"
-			"OSX":
-				path = "/Applications/Blender.app/Contents/MacOS/Blender"
-			"X11":
-				path = "/usr/bin/blender"
-
-		ProjectSettings.set_setting("blender/path", path)
-
+	var path = null
 	var property_info = {
 		"name": "blender/path",
 		"type": TYPE_STRING,
-		"hint": PROPERTY_HINT_GLOBAL_FILE,
-		"hint_string": "*.exe"
 	}
+	
+	# Set some sane default paths for each OS and their File Selectors
+	match OS.get_name():
+		"Windows":
+			path = "C:\\Program Files\\Blender Foundation\\Blender 2.83\\blender.exe"
+
+			property_info["hint"] = PROPERTY_HINT_GLOBAL_FILE
+			property_info["hint_string"] = "*.exe"
+		"OSX":
+			path = "/Applications/Blender.app"
+
+			property_info["hint"] = PROPERTY_HINT_GLOBAL_DIR
+			property_info["hint_string"] = "*.app"
+		"X11":
+			path = "/usr/bin/blender"
+			
+			property_info["hint"] = PROPERTY_HINT_GLOBAL_FILE
+			property_info["hint_string"] = "*"
+
+	# If there isn't a property for the path yet, use the defaults
+	if !ProjectSettings.has_setting("blender/path"):
+		ProjectSettings.set_setting("blender/path", path)
+
 	ProjectSettings.add_property_info(property_info)
 	
 	for P in [
