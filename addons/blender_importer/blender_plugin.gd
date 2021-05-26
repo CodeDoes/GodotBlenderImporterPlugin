@@ -29,7 +29,7 @@ func _enter_tree():
 	for P in [
 #		preload("res://addons/blender_importer/blender_escn_exporter_import_plugin.gd"),
 		preload("res://addons/blender_importer/blender_gltf_exporter_import_plugin.gd"),
-		]:
+	]:
 		var p = P.new()
 		add_import_plugin(p)
 		import_plugins.append(p)

@@ -1,13 +1,8 @@
 tool
 extends EditorImportPlugin
+
 enum Presets {GLTF_GLB}
-class PySet:
-	extends Object
-	var value:Array
-func newPySet(val:Array):
-	var ins = PySet.new()
-	ins.value = val
-	return ins
+
 func get_importer_name():
 	return "blender.gltf"
 
@@ -27,58 +22,19 @@ func get_preset_count():
 	return 1
 
 func get_preset_name(i):
-	if i==Presets.GLTF_GLB:
+	if i == Presets.GLTF_GLB:
 		return "Blender Gltf exporter"
 func get_import_options(i):
-	if i==Presets.GLTF_GLB:
+	if i == Presets.GLTF_GLB:
 		return [ ]
-func quote(val):
-	return '"%s"'%val
-func escape_quotes(val:String):
-	return val.replace("\\","\\\\").replace('"','\\"').replace("'","\\'")
-func gdval2py(v):
-	if v is String:
-		return '"%s"'%v
-	elif v is Array:
-		var r = PoolStringArray([])
-		for i in v:
-			r.append(gdval2py(i))
-		return '[%s]'%r.join(", ")
-	elif v is Dictionary:
-		var r = PoolStringArray()
-		for ik in v.keys():
-			var iv = v[ik]
-			r.append("\"%s\":%s"%[ik,gdval2py(iv)])
-		return "{%s}"%r.join(", ")
-	elif v is PySet:
-		var r = PoolStringArray([])
-		for i in v.value:
-			r.append(gdval2py(i))
-		return '{%s}'%r.join(", ")
-	else:
-		return String(v)
 
-func globalize_workaround(val:String):
-	if OS.get_name()=="Windows":
+func globalize_workaround(val: String):
+	if OS.get_name() == "Windows":
+		# To run binaries with OS.execute on Windows, the Unix directory separator should be changed
+		# to the Windows separator
 		return val.replace("/","\\")
 	else:
 		return val
-func flags_to_namelist(val:int,namelist:Array):
-	var result = []
-	for i in namelist.size():
-		if (1<<i & val)>0:
-			result.append(namelist[i].to_upper())
-	return result
-func get_cache_dir():
-	match OS.get_name():
-		"Windows":
-			return "%TEMP%\\Godot\\"
-		"OSX":
-			return "~/Library/Caches/Godot/"
-		"X11":
-			return "~/.cache/godot/"
-
-var addon_cache_dir = "res://addons/blender_importer/cache/"
 
 func import(source_file, save_path, options, platform_variants, gen_files):
 	var file = File.new()
