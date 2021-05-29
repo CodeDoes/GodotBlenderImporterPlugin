@@ -28,17 +28,19 @@ func _enter_tree():
 			property_info["hint"] = PROPERTY_HINT_GLOBAL_FILE
 			property_info["hint_string"] = "*"
 
-	# If there isn't a property for the path yet, use the defaults
-	if !ProjectSettings.has_setting("blender/path"):
-		ProjectSettings.set_setting("blender/path", path)
+	var editor_settings := get_editor_interface().get_editor_settings()
 
-	ProjectSettings.add_property_info(property_info)
+	# If there isn't a property for the path yet, use the defaults
+	if !editor_settings.has_setting("blender/path"):
+		editor_settings.set_setting("blender/path", path)
+
+	editor_settings.add_property_info(property_info)
 	
 	for P in [
 #		preload("res://addons/blender_importer/blender_escn_exporter_import_plugin.gd"),
 		preload("res://addons/blender_importer/blender_gltf_exporter_import_plugin.gd"),
 	]:
-		var p = P.new()
+		var p = P.new(editor_settings)
 		add_import_plugin(p)
 		import_plugins.append(p)
 

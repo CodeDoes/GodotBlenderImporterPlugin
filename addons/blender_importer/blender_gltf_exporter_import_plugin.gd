@@ -3,6 +3,11 @@ extends EditorImportPlugin
 
 enum Presets {GLTF_GLB}
 
+var editor_settings: EditorSettings
+
+func _init(editor_settings: EditorSettings) -> void:
+	self.editor_settings = editor_settings
+
 func get_importer_name():
 	return "blender.gltf"
 
@@ -47,7 +52,7 @@ func import(source_file, save_path, options, platform_variants, gen_files):
 	file.close()
 
 	# Get the global path to the Blender executable, blend file and the destination file
-	var os_blenderexe = globalize_workaround(ProjectSettings.get_setting("blender/path"))
+	var os_blenderexe = globalize_workaround(editor_settings.get_setting("blender/path"))
 	var os_sourcefile = globalize_workaround(ProjectSettings.globalize_path(source_file))
 	var os_filename = globalize_workaround(ProjectSettings.globalize_path(save_path))
 
