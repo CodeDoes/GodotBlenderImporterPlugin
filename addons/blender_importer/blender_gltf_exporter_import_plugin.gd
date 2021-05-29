@@ -1,18 +1,18 @@
 tool
 extends EditorImportPlugin
+
 enum Presets {GLTF_GLB}
-class PySet:
-	extends Object
-	var value:Array
-func newPySet(val:Array):
-	var ins = PySet.new()
-	ins.value = val
-	return ins
+
+var editor_settings: EditorSettings
+
+func _init(editor_settings: EditorSettings) -> void:
+	self.editor_settings = editor_settings
+
 func get_importer_name():
 	return "blender.gltf"
 
 func get_visible_name():
-	return "Blender GLTF XImporter"
+	return "Blender glTF XImporter"
 
 func get_recognized_extensions():
 	return ["blend"]
@@ -27,90 +27,74 @@ func get_preset_count():
 	return 1
 
 func get_preset_name(i):
-	if i==Presets.GLTF_GLB:
-		return "Blender Gltf exporter"
+	if i == Presets.GLTF_GLB:
+		return "glTF Binary (glb)"
 func get_import_options(i):
-	if i==Presets.GLTF_GLB:
+	if i == Presets.GLTF_GLB:
 		return [ ]
-func quote(val):
-	return '"%s"'%val
-func escape_quotes(val:String):
-	return val.replace("\\","\\\\").replace('"','\\"').replace("'","\\'")
-func gdval2py(v):
-	if v is String:
-		return '"%s"'%v
-	elif v is Array:
-		var r = PoolStringArray([])
-		for i in v:
-			r.append(gdval2py(i))
-		return '[%s]'%r.join(", ")
-	elif v is Dictionary:
-		var r = PoolStringArray()
-		for ik in v.keys():
-			var iv = v[ik]
-			r.append("\"%s\":%s"%[ik,gdval2py(iv)])
-		return "{%s}"%r.join(", ")
-	elif v is PySet:
-		var r = PoolStringArray([])
-		for i in v.value:
-			r.append(gdval2py(i))
-		return '{%s}'%r.join(", ")
-	else:
-		return String(v)
 
-func globalize_workaround(val:String):
-	if OS.get_name()=="Windows":
+func globalize_workaround(val: String):
+	if OS.get_name() == "Windows":
+		# To run binaries with OS.execute on Windows, the Unix directory separator should be changed
+		# to the Windows separator
 		return val.replace("/","\\")
 	else:
 		return val
-func flags_to_namelist(val:int,namelist:Array):
-	var result = []
-	for i in namelist.size():
-		if (1<<i & val)>0:
-			result.append(namelist[i].to_upper())
-	return result
-func get_cache_dir():
-	if OS.get_name()=="Windows":
-		return "%TEMP%\\Godot\\"
-	elif OS.get_name()=="OSX":
-		return "~/Library/Caches/Godot/"
-	elif OS.get_name()=="X11":
-		return "~/.cache/godot/"
-var addon_cache_dir = "res://addons/blender_importer/cache/"
-		
+
 func import(source_file, save_path, options, platform_variants, gen_files):
 	var file = File.new()
 	var dir = Directory.new()
+
+	# Check if the blend file can be read
 	if file.open(source_file, File.READ) != OK:
 		printerr("Failed to read blend file")
 		return FAILED
 	file.close()
-	var os_blenderexe = globalize_workaround("C:\\Program Files\\Blender Foundation\\Blender 2.83\\blender.exe")
+
+	# Get the global path to the Blender executable, blend file and the destination file
+	var os_blenderexe = globalize_workaround(editor_settings.get_setting("blender/path"))
 	var os_sourcefile = globalize_workaround(ProjectSettings.globalize_path(source_file))
-	
-	var filename = addon_cache_dir + save_path.get_file() + ".glb"
-	var os_filename = globalize_workaround(ProjectSettings.globalize_path(filename))
+	var os_filename = globalize_workaround(ProjectSettings.globalize_path(save_path))
+
+	# Add the path to the actual executable for macOS
+	if OS.get_name() == "OSX":
+		os_blenderexe += "/Contents/MacOS/Blender"
+
+	# Build the python expression for running the glTF exporter
 	var os_pyexpr = "import bpy,sys;print(' '.join(sys.argv));bpy.ops.export_scene.gltf(filepath=r'%s')"%os_filename
-	
+
+	# Run Blender with the above Python expression, keep note of the stdout for debug purposes
 	var out = []
-	var exit_code = OS.execute(os_blenderexe,
+	var exit_code = OS.execute(
+		os_blenderexe,
 		["--background", os_sourcefile, "--python-expr", os_pyexpr],
-		true,out,true)
-	print(os_sourcefile)
-	print(os_pyexpr)
+		true,
+		out,
+		true
+	)
 	print(PoolStringArray(out).join("\n"))
-	if exit_code==0:
-		var err = file.open(os_filename,File.READ)
-		if err!=OK:
-			printerr(err," Failed to read gltf intermediary file")
+
+	# Check if the export worked
+	if exit_code == 0:
+		# Check for the final glb file
+		var err = file.open(os_filename + ".glb", File.READ)
+		if err != OK:
+			printerr("Failed to read gltf intermediary file. Error code ", err)
 			return FAILED
 		file.close()
-#		var floader = ResourceFormatLoader.new()
-		var pscene = ResourceLoader.load(filename)
-		var save_name = save_path+"."+get_save_extension()
-		err = ResourceSaver.save(save_name,pscene)
-		if err!=OK:
-			printerr(err," Failed to save final scn file ",pscene)
+
+		# Tell the editor to load the scene using EditorSceneImporter
+		var pack = PackedScene.new()
+		# TODO: Add options for the import flags and FPS
+		var scene = EditorSceneImporter.new().import_scene_from_other_importer(save_path + ".glb", 0, 0)
+
+		# Pack the Node into a PackedScene to be saved
+		pack.pack(scene)
+
+		# Save the scene
+		err = ResourceSaver.save("%s.%s" % [save_path, get_save_extension()], pack)
+		if err != OK:
+			printerr("Failed to save final SCN file ", pack, " Error code: ", err)
 			return err
 		return OK
 	else:
